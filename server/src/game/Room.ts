@@ -54,6 +54,35 @@ export class Room {
     return undefined;
   }
 
+  /**
+   * Phase 6A: mark the player on `socketId` as gone WITHOUT removing the seat. The seat,
+   * its progress, and its reconnect token survive so the player can rejoin during the
+   * grace window. Returns the affected player, or undefined if no seat had that socket.
+   */
+  markDisconnected(socketId: string): Player | undefined {
+    for (const player of this.players.values()) {
+      if (player.socketId === socketId) {
+        player.connected = false;
+        player.socketId = null;
+        return player;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Phase 6A: re-bind a returning client to its existing seat via the secret token. Keeps
+   * all prior state (position, wpm, finishedAt). Returns the player, or null if the token
+   * matches no seat (e.g. the grace window already expired and the seat was removed).
+   */
+  reconnect(token: string, socketId: string): Player | null {
+    const player = this.getByToken(token);
+    if (!player) return null;
+    player.connected = true;
+    player.socketId = socketId;
+    return player;
+  }
+
   startCountdown(): void {
     this.phase = 'countdown';
   }

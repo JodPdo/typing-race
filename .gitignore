@@ -12,9 +12,10 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# Env / local
+# Env / local — ignore real env files but keep the committed examples
 .env
 .env.*
+!.env.example
 *.local
 
 # Editor / OS

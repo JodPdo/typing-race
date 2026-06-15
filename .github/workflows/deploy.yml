@@ -1,0 +1,106 @@
+name: Deploy
+
+# CI on every push to main; deploy only after CI passes (and only on main).
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ----------------------------------------------------------------------------------
+  # CI: tests + typecheck + builds. If anything here fails, the deploy job never runs.
+  # ----------------------------------------------------------------------------------
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # --- Server: install, test, typecheck, build ---
+      - name: Install server deps
+        working-directory: server
+        run: npm ci
+
+      - name: Server tests
+        working-directory: server
+        run: npm test
+
+      - name: Server typecheck
+        working-directory: server
+        run: npx tsc --noEmit
+
+      - name: Build server
+        working-directory: server
+        run: npm run build
+
+      # --- Client: install, build (talks to the same origin in prod) ---
+      - name: Install client deps
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+        env:
+          # Baked in at build time so the static client connects to the prod origin.
+          VITE_SERVER_URL: https://race.aiklaotrip.com
+
+      # --- Hand the build artifacts to the deploy job ---
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: |
+            server/dist
+            server/package.json
+            server/package-lock.json
+            client/dist
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------------------
+  # Deploy: copy artifacts to the VPS and reload PM2. Runs only on main, only after ci.
+  # All host/user/key come from GitHub Secrets — nothing is hardcoded.
+  # ----------------------------------------------------------------------------------
+  deploy:
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync server build (dist + manifests)
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
+            server/dist/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/typing-race/server/dist/"
+          scp -i ~/.ssh/id_deploy server/package.json server/package-lock.json \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/typing-race/server/"
+
+      - name: Sync client build (static SPA)
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
+            client/dist/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/typing-race/client/"
+
+      - name: Install prod deps + reload PM2
+        run: |
+          ssh -i ~/.ssh/id_deploy "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'cd /var/www/typing-race/server && npm ci --omit=dev && \
+             (pm2 reload typing-race || pm2 start /var/www/typing-race/ecosystem.config.js) && \
+             pm2 save'
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_deploy

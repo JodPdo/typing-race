@@ -38,7 +38,13 @@ Open the client, enter a name, and click **Play solo (vs bot)** to race.
 | `client/` | `npm run dev` | Vite dev server |
 | `client/` | `npm run build` | Type-check + production build |
 
+## Deploy
+
+Live at **https://race.aiklaotrip.com**. Pushing to `main` runs CI (tests + typecheck +
+build) and, on success, deploys to the VPS via PM2 behind nginx. See **[DEPLOY.md](DEPLOY.md)**
+for the one-time setup (PostgreSQL, GitHub secrets, nginx, PM2) and the pipeline details.
+
 ## Status
 
-Server through Phase 4 (Socket.IO wiring + tick loop), client through Phase 5
-(Vite React UI). Persistence / reconnect / deploy are future work.
+Feature-complete: real-time solo/versus play, server-authoritative scoring + anti-cheat,
+bots, reconnect/presence, optional PostgreSQL leaderboard, and CI/CD deploy.

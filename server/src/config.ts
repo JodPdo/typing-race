@@ -7,6 +7,8 @@ export interface Config {
   tickMs: number;
   maxCharsPerSec: number;
   corsOrigin: string;
+  reconnectGraceMs: number;
+  databaseUrl: string;
 }
 
 /** Parse an env var as a number, falling back when it is unset/blank/non-numeric. */
@@ -22,4 +24,8 @@ export const config: Config = {
   tickMs: num(process.env.TICK_MS, 100),
   maxCharsPerSec: num(process.env.MAX_CHARS_PER_SEC, 20),
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
+  // Phase 6A: how long a dropped player's seat (and progress) is held for reconnect.
+  reconnectGraceMs: num(process.env.RECONNECT_GRACE_MS, 30000),
+  // Phase 6B: PostgreSQL connection string. Empty = persistence disabled (game still runs).
+  databaseUrl: process.env.DATABASE_URL ?? '',
 };

@@ -7,6 +7,7 @@ import { Server, Socket } from 'socket.io';
 import { config } from '../config';
 import { RoomManager } from '../game/RoomManager';
 import { Room } from '../game/Room';
+import { saveResults } from '../db/results';
 
 // What we stash on each socket so later events know which seat the socket owns.
 interface SocketData {
@@ -23,6 +24,10 @@ export function registerSocket(io: Server): void {
 
   // Ready-tracking for versus lobbies: code -> set of human seatIds that pressed ready.
   const ready = new Map<string, Set<string>>();
+
+  // Phase 6A: pending seat-removal timers, keyed by `${code}:${seatId}`. A disconnect
+  // starts one; a reconnect within the grace window clears it.
+  const graceTimers = new Map<string, NodeJS.Timeout>();
 
   // --- helpers -------------------------------------------------------------------
 
@@ -57,7 +62,15 @@ export function registerSocket(io: Server): void {
         ready.delete(room.code);
 
         const results = room.finish();
-        // Phase 6 will persist `results` to PostgreSQL here.
+
+        // Phase 6B: persist HUMAN results only (bots excluded). Best-effort and
+        // fire-and-forget — a DB failure (or a disabled DB) must never break the game,
+        // so we never await it and always catch.
+        const humanResults = results.filter((r) => !room.players.get(r.seatId)?.isBot);
+        saveResults(room.code, room.mode, humanResults).catch((err) =>
+          console.error('saveResults failed', err),
+        );
+
         io.to(room.code).emit('race:finished', { results });
       }
     }, config.tickMs);
@@ -159,6 +172,48 @@ export function registerSocket(io: Server): void {
       broadcastState(room);
     });
 
+    // Phase 6A: re-bind a returning client to its existing seat using the secret token.
+    socket.on('room:reconnect', ({ code, token }: { code: string; token: string }) => {
+      const room = manager.get(code);
+      if (!room) {
+        socket.emit('error', { code: 'ROOM_GONE', message: 'That room no longer exists.' });
+        return;
+      }
+
+      const player = room.reconnect(token, socket.id);
+      if (!player) {
+        socket.emit('error', { code: 'SEAT_GONE', message: 'Your seat is no longer available.' });
+        return;
+      }
+
+      // Cancel the pending seat-removal timer for this seat.
+      const key = `${room.code}:${player.seatId}`;
+      const timer = graceTimers.get(key);
+      if (timer) {
+        clearTimeout(timer);
+        graceTimers.delete(key);
+      }
+
+      data.code = room.code;
+      data.seatId = player.seatId;
+      socket.join(room.code);
+
+      socket.emit('room:joined', {
+        code: room.code,
+        seatId: player.seatId,
+        token: player.token,
+        phase: room.phase,
+        players: room.publicPlayers(),
+      });
+
+      // A mid-race returner needs the passage + start time to rebuild the racing screen.
+      if (room.phase === 'racing') {
+        socket.emit('race:start', { text: room.text, startedAt: room.startedAt });
+      }
+
+      broadcastState(room);
+    });
+
     // Versus: a player marks ready. Start once >= 2 humans are present and all are ready.
     socket.on('player:ready', () => {
       if (!data.code || !data.seatId) return;
@@ -190,22 +245,49 @@ export function registerSocket(io: Server): void {
       room.applyProgress(data.seatId, position);
     });
 
-    // Minimal cleanup only (full reconnect/presence is Phase 6): a disconnect from a solo
-    // room tears the room down so we don't leak a tick loop running against nobody.
+    // Phase 6A: a disconnect no longer deletes the seat immediately. It flips the seat to
+    // disconnected (keeping progress), broadcasts presence, and starts a grace timer; the
+    // seat is only removed if nobody reconnects to it before reconnectGraceMs elapses.
     socket.on('disconnect', () => {
-      if (!data.code) return;
+      if (!data.code || !data.seatId) return;
       const room = manager.get(data.code);
       if (!room) return;
 
-      if (room.mode === 'solo') {
-        const interval = ticks.get(room.code);
-        if (interval) {
-          clearInterval(interval);
-          ticks.delete(room.code);
+      const player = room.markDisconnected(socket.id);
+      if (!player) return;
+      broadcastState(room);
+
+      const key = `${room.code}:${player.seatId}`;
+      const timer = setTimeout(() => {
+        graceTimers.delete(key);
+
+        const liveRoom = manager.get(room.code);
+        if (!liveRoom) return;
+
+        const seat = liveRoom.players.get(player.seatId);
+        // Reconnected in the meantime → nothing to do.
+        if (!seat || seat.connected) return;
+
+        // Grace expired with no reconnect: drop the seat (and its progress).
+        liveRoom.players.delete(player.seatId);
+        ready.get(liveRoom.code)?.delete(player.seatId);
+
+        // If no connected human remains, tear the whole room down.
+        const humansLeft = [...liveRoom.players.values()].filter((p) => !p.isBot && p.connected);
+        if (humansLeft.length === 0) {
+          const interval = ticks.get(liveRoom.code);
+          if (interval) {
+            clearInterval(interval);
+            ticks.delete(liveRoom.code);
+          }
+          ready.delete(liveRoom.code);
+          manager.remove(liveRoom.code);
+        } else {
+          broadcastState(liveRoom);
         }
-        ready.delete(room.code);
-        manager.remove(room.code);
-      }
+      }, config.reconnectGraceMs);
+
+      graceTimers.set(key, timer);
     });
   });
 }

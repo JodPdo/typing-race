@@ -79,7 +79,7 @@ export function useRace() {
       setSeatId(d.seatId);
       setPlayers(d.players);
       setError(null);
-      // Stored for Phase 6 reconnect (re-binding this client to its seat). Unused for now.
+      // Stored so a reload/drop can re-bind this client to the same seat (Phase 6A).
       sessionStorage.setItem('typingRaceToken', d.token);
       sessionStorage.setItem('typingRaceCode', d.code);
       setScreen(screenForPhase(d.phase));
@@ -122,6 +122,11 @@ export function useRace() {
     }
 
     function onError(d: RaceError) {
+      // A stale reconnect attempt (room/seat gone): drop the saved seat so we don't loop.
+      if (d.code === 'ROOM_GONE' || d.code === 'SEAT_GONE') {
+        sessionStorage.removeItem('typingRaceToken');
+        sessionStorage.removeItem('typingRaceCode');
+      }
       setError(d);
     }
 
@@ -142,6 +147,16 @@ export function useRace() {
       socket.off('race:finished', onFinished);
       socket.off('error', onError);
     };
+  }, []);
+
+  // Phase 6A: on first mount, if we still hold a seat token + room code from before a
+  // reload/drop, ask the server to re-bind us to that seat. (Buffered until connected.)
+  useEffect(() => {
+    const token = sessionStorage.getItem('typingRaceToken');
+    const savedCode = sessionStorage.getItem('typingRaceCode');
+    if (token && savedCode) {
+      socket.emit('room:reconnect', { code: savedCode, token });
+    }
   }, []);
 
   // --- action emitters -----------------------------------------------------------

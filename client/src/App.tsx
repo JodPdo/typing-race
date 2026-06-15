@@ -97,6 +97,7 @@ function Lobby({ race }: { race: RaceHook }) {
             {p.name}
             {p.isBot ? ' 🤖' : ''}
             {p.seatId === race.seatId ? ' (you)' : ''}
+            {!p.connected && !p.isBot ? ' — disconnected' : ''}
           </li>
         ))}
       </ul>
@@ -212,6 +213,7 @@ function ProgressBar({
         {player.name}
         {player.isBot ? ' 🤖' : ''}
         {isLocal ? ' (you)' : ''}
+        {!player.connected && !player.isBot ? ' — disconnected' : ''}
       </span>
       <div className="bar-track">
         <div className="bar-fill" style={{ width: `${pct}%` }} />
