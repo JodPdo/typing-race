@@ -78,16 +78,11 @@ jobs:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
+          # VPS_SSH_KEY is stored base64-encoded (single line) to avoid multiline-secret mangling.
           echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
-          echo "DIAG secret_sha=$(printf '%s' "${{ secrets.VPS_SSH_KEY }}" | sha256sum | cut -d' ' -f1)"
-          echo "DIAG dkey_sha=$(sha256sum ~/.ssh/id_deploy | cut -d' ' -f1)"
-          echo "DIAG dkey_len=$(wc -c < ~/.ssh/id_deploy)"
-          echo "DIAG dkey_head=$(head -1 ~/.ssh/id_deploy)"
-          echo "DIAG dkey_tail_xxd=$(tail -c 8 ~/.ssh/id_deploy | xxd | tr '\n' ' ')"
-          ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null 2>/tmp/keyerr && echo "KEY_OK" || { echo "KEY_BAD"; echo "DIAG keyerr=$(cat /tmp/keyerr)"; }
-          echo "DIAG user_xxd=$(printf '%s' "${{ secrets.VPS_USER }}" | xxd | tr '\n' ' ')"
-          echo "DIAG host_xxd=$(printf '%s' "${{ secrets.VPS_HOST }}" | xxd | tr '\n' ' ')"
+          # Fail fast with a clear message if the materialized key is unusable.
+          ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null && echo "KEY_OK" || { echo "KEY_BAD: id_deploy is not a valid key"; exit 1; }
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Sync server build (dist + manifests)
@@ -100,7 +95,7 @@ jobs:
       - name: Sync client build (static SPA)
         run: |
           rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
-            client/dist/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/typing-race/client/"
+            client/dist/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/typing-race/client/dist/"
 
       - name: Install prod deps + reload PM2
         run: |
