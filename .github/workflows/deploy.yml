@@ -78,6 +78,8 @@ jobs:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
+          echo "secret_len=$(printf '%s' "${{ secrets.VPS_SSH_KEY }}" | wc -c)"
+          echo "secret_sha=$(printf '%s' "${{ secrets.VPS_SSH_KEY }}" | sha256sum | cut -d' ' -f1)"
           echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/id_deploy
           ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null && echo "KEY_OK" || echo "KEY_BAD"
           chmod 600 ~/.ssh/id_deploy
