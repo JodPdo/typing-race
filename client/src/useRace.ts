@@ -119,6 +119,10 @@ export function useRace() {
     function onFinished(d: RaceFinished) {
       setResults(d.results);
       setScreen('finished');
+      // Game over: drop the saved seat so a reload / "Play again" can't reconnect into
+      // this now-finished room (Phase 6A mount effect would otherwise re-bind us to it).
+      sessionStorage.removeItem('typingRaceToken');
+      sessionStorage.removeItem('typingRaceCode');
     }
 
     function onError(d: RaceError) {
@@ -184,6 +188,16 @@ export function useRace() {
     socket.emit('race:progress', { position });
   }, []);
 
+  // "Play again": return to Home with a clean slate (no reload, no reconnect). The saved
+  // seat was already cleared in onFinished, so the next game starts fresh.
+  const reset = useCallback(() => {
+    setResults([]);
+    setPlayers([]);
+    setText('');
+    setError(null);
+    setScreen('home');
+  }, []);
+
   return {
     // state
     screen,
@@ -200,5 +214,6 @@ export function useRace() {
     joinRoom,
     ready,
     sendProgress,
+    reset,
   };
 }

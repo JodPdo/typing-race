@@ -30,7 +30,7 @@ export default function App() {
     case 'racing':
       return <Race race={race} />;
     case 'finished':
-      return <Finished results={race.results} />;
+      return <Finished results={race.results} onPlayAgain={race.reset} />;
     case 'home':
     default:
       return <Home race={race} />;
@@ -117,7 +117,7 @@ function Countdown({ secondsLeft }: { secondsLeft: number }) {
   );
 }
 
-function Finished({ results }: { results: RaceHook['results'] }) {
+function Finished({ results, onPlayAgain }: { results: RaceHook['results']; onPlayAgain: () => void }) {
   return (
     <div className="screen">
       <h1>Results</h1>
@@ -131,7 +131,7 @@ function Finished({ results }: { results: RaceHook['results'] }) {
           </li>
         ))}
       </ol>
-      <button onClick={() => window.location.reload()}>Play again</button>
+      <button onClick={onPlayAgain}>Play again</button>
     </div>
   );
 }
