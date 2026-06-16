@@ -1,201 +1,63 @@
-/* Minimal, usable styling for Phase 5. Polish comes later from the existing mockup.
-   Reuses the CSS variables defined in index.css (--accent, --border, --code-bg, …). */
+/* Typing Race — Mario theme. 8-bit pixel font + sky/brick palette, chunky blocky UI. */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-.screen {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 24px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+:root {
+  --sky: #5c94fc; --ink: #1a1a2e; --red: #e52521; --green: #43b047; --green-d: #2f8a33;
+  --coin: #fbd000; --coin-d: #e0b800; --brick: #c84c0c; --panel: #fff8e7; --muted: #9aa0b0;
+  --pixel: 'Press Start 2P', system-ui, sans-serif; --mono: 'Courier New', monospace;
 }
-
-.screen.center {
-  text-align: center;
-  align-items: center;
-}
-
-h1 {
-  font-size: 40px;
-  margin: 16px 0;
-}
-
-button {
-  font: inherit;
-  padding: 10px 18px;
-  border-radius: 8px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--text-h);
-  cursor: pointer;
-}
-button:hover {
-  border-color: var(--accent);
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-input {
-  font: inherit;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 280px;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.join {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.join input {
-  width: 120px;
-  text-transform: uppercase;
-  letter-spacing: 4px;
-}
-
-.error {
-  color: #e5484d;
-}
-
-.code strong {
-  font-family: var(--mono);
-  font-size: 1.4em;
-  letter-spacing: 4px;
-  color: var(--accent);
-}
-
-.players,
-.results {
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.results {
-  list-style: none;
-  padding-left: 0;
-}
-.results li {
-  display: flex;
-  gap: 16px;
-  align-items: baseline;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.results .rank {
-  font-weight: 700;
-  color: var(--accent);
-  width: 40px;
-}
-.results .rname {
-  flex: 1;
-  color: var(--text-h);
-}
-.results .rstat {
-  font-family: var(--mono);
-  font-size: 0.9em;
-}
-
-.hint {
-  font-size: 0.85em;
-  opacity: 0.7;
-}
-
-.countdown {
-  font-size: 120px;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-/* --- Race --------------------------------------------------------------------- */
-
-.passage {
-  font-family: var(--mono);
-  font-size: 22px;
-  line-height: 165%;
-  padding: 16px;
-  border-radius: 10px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-}
-.passage .ok {
-  color: var(--accent);
-}
-.passage .cur {
-  background: var(--accent);
-  color: var(--bg);
-  border-radius: 2px;
-}
-.passage .rem {
-  color: var(--text);
-}
-
-.typing {
-  width: 100%;
-  box-sizing: border-box;
-  font-family: var(--mono);
-}
-
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.bar-row {
-  display: grid;
-  grid-template-columns: 160px 1fr 80px;
-  align-items: center;
-  gap: 10px;
-}
-.bar-row.local .bar-name {
-  font-weight: 700;
-  color: var(--text-h);
-}
-.bar-name {
-  font-size: 0.9em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bar-track {
-  height: 14px;
-  border-radius: 7px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.1s linear;
-}
-.bar-row.local .bar-fill {
-  background: linear-gradient(90deg, var(--accent), #ff9d3b);
-}
-.bar-wpm {
-  font-family: var(--mono);
-  font-size: 0.85em;
-  text-align: right;
-}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--sky); font-family: var(--pixel); color: var(--ink); }
+body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 28px;
+  background: repeating-linear-gradient(90deg, var(--brick) 0 26px, #a83c08 26px 28px);
+  border-top: 4px solid var(--ink); z-index: 0; }
+.screen { position: relative; z-index: 1; max-width: 520px; margin: 48px auto; background: var(--panel);
+  border: 4px solid var(--ink); border-radius: 10px; box-shadow: 6px 6px 0 var(--ink); padding: 28px 26px; }
+.screen.center { text-align: center; }
+h1 { font-family: var(--pixel); text-transform: uppercase; font-size: 22px; line-height: 1.4; text-align: center;
+  color: #fff; text-shadow: 4px 4px 0 var(--red), 7px 7px 0 var(--ink); margin: 0 0 26px; }
+.field { display: block; font-size: 10px; text-transform: uppercase; margin-bottom: 18px; }
+input { font-family: var(--pixel); font-size: 11px; width: 100%; background: #fff; border: 3px solid var(--ink);
+  border-radius: 4px; padding: 11px 12px; margin-top: 8px; color: var(--ink); box-shadow: inset 2px 2px 0 rgba(0,0,0,0.12); }
+input::placeholder { color: var(--muted); letter-spacing: 1px; }
+button { font-family: var(--pixel); text-transform: uppercase; font-size: 11px; color: #fff; background: var(--red);
+  border: 3px solid var(--ink); border-radius: 4px; box-shadow: 3px 3px 0 var(--ink); padding: 13px 16px;
+  cursor: pointer; line-height: 1.4; transition: transform .05s, box-shadow .05s, filter .05s; }
+button:hover { filter: brightness(1.08); }
+button:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+button:disabled { background: var(--muted); box-shadow: 3px 3px 0 #6b7280; cursor: not-allowed; }
+.actions { display: flex; gap: 12px; margin: 18px 0 14px; }
+.actions button { flex: 1; }
+.actions button:nth-child(2) { background: var(--green); }
+.join { display: flex; gap: 10px; }
+.join input { margin-top: 0; text-transform: uppercase; letter-spacing: 4px; }
+.join button { background: var(--coin); color: var(--ink); }
+.error { font-size: 10px; line-height: 1.6; color: var(--red); margin-top: 16px; }
+.code { font-size: 11px; }
+.code strong { color: var(--red); }
+.players { list-style: none; padding: 0; margin: 18px 0; }
+.players li { font-size: 11px; background: #fff; border: 3px solid var(--ink); border-radius: 4px;
+  box-shadow: 3px 3px 0 var(--ink); padding: 10px 12px; margin-bottom: 10px; }
+.hint { font-size: 9px; color: #5b6472; line-height: 1.6; margin-top: 12px; }
+.countdown { font-size: 64px; color: var(--coin); text-shadow: 4px 4px 0 var(--ink); margin-top: 10px; }
+.results { list-style: none; padding: 0; margin: 0 0 22px; }
+.results li { display: flex; align-items: center; gap: 12px; font-size: 11px; background: #fff;
+  border: 3px solid var(--ink); border-radius: 4px; box-shadow: 3px 3px 0 var(--ink); padding: 12px; margin-bottom: 10px; }
+.results .rank { color: var(--coin); background: var(--ink); padding: 4px 6px; border-radius: 3px; }
+.results .rname { flex: 1; }
+.results .rstat { font-size: 9px; color: #5b6472; }
+.passage { font-family: var(--mono); font-size: 17px; line-height: 1.9; background: #fff; border: 3px solid var(--ink);
+  border-radius: 6px; box-shadow: 3px 3px 0 var(--ink); padding: 14px 16px; margin-bottom: 14px; word-break: break-word; }
+.passage .ok { background: var(--green); color: #fff; }
+.passage .cur { background: var(--coin); color: var(--ink); }
+.passage .rem { color: var(--muted); }
+.typing { font-family: var(--mono); font-size: 15px; letter-spacing: 0; }
+.bars { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+.bar-row { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 6px; align-items: center; }
+.bar-name { grid-row: 1; grid-column: 1; font-size: 9px; }
+.bar-wpm { grid-row: 1; grid-column: 2; font-size: 9px; text-align: right; color: var(--ink); }
+.bar-track { grid-row: 2; grid-column: 1 / -1; height: 16px; background: var(--ink); border: 3px solid var(--ink);
+  border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--coin) 0 10px, var(--coin-d) 10px 12px);
+  transition: width .15s linear; }
+.bar-row.local .bar-fill { background: repeating-linear-gradient(90deg, var(--green) 0 10px, var(--green-d) 10px 12px); }

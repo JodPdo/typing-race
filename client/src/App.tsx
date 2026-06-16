@@ -46,7 +46,7 @@ function Home({ race }: { race: RaceHook }) {
 
   return (
     <div className="screen">
-      <h1>⌨️ Typing Race</h1>
+      <h1>Typing Race</h1>
 
       <label className="field">
         Name
@@ -95,7 +95,7 @@ function Lobby({ race }: { race: RaceHook }) {
         {race.players.map((p) => (
           <li key={p.seatId}>
             {p.name}
-            {p.isBot ? ' 🤖' : ''}
+            {p.isBot ? ' (bot)' : ''}
             {p.seatId === race.seatId ? ' (you)' : ''}
             {!p.connected && !p.isBot ? ' — disconnected' : ''}
           </li>
@@ -211,7 +211,7 @@ function ProgressBar({
     <div className={`bar-row${isLocal ? ' local' : ''}`}>
       <span className="bar-name">
         {player.name}
-        {player.isBot ? ' 🤖' : ''}
+        {player.isBot ? ' (bot)' : ''}
         {isLocal ? ' (you)' : ''}
         {!player.connected && !player.isBot ? ' — disconnected' : ''}
       </span>
