@@ -41,7 +41,9 @@ type RaceHook = ReturnType<typeof useRace>;
 
 function Home({ race }: { race: RaceHook }) {
   const [name, setName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState(
+    () => new URLSearchParams(window.location.search).get('room')?.toUpperCase().slice(0, 4) ?? ''
+  );
   const playerName = name.trim() || 'Player';
 
   return (
@@ -84,13 +86,19 @@ function Home({ race }: { race: RaceHook }) {
 }
 
 function Lobby({ race }: { race: RaceHook }) {
+  const [copied, setCopied] = useState(false);
+  function invite() {
+    const url = `${window.location.origin}/?room=${race.code}`;
+    navigator.clipboard?.writeText(url).then(
+      () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+      () => {},
+    );
+  }
   return (
     <div className="screen">
+      <button className="back" onClick={race.reset}>&larr; Back</button>
       <h1>Lobby</h1>
-      <p className="code">
-        Room code: <strong>{race.code}</strong>
-      </p>
-
+      <p className="code">Room code: <strong>{race.code}</strong></p>
       <ul className="players">
         {race.players.map((p) => (
           <li key={p.seatId}>
@@ -101,8 +109,10 @@ function Lobby({ race }: { race: RaceHook }) {
           </li>
         ))}
       </ul>
-
-      <button onClick={race.ready}>Ready</button>
+      <div className="actions">
+        <button onClick={race.ready}>Ready</button>
+        <button onClick={invite}>{copied ? 'Copied!' : 'Invite'}</button>
+      </div>
       <p className="hint">The race starts when at least 2 players are ready.</p>
     </div>
   );

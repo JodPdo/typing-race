@@ -61,3 +61,5 @@ button:disabled { background: var(--muted); box-shadow: 3px 3px 0 #6b7280; curso
 .bar-fill { height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--coin) 0 10px, var(--coin-d) 10px 12px);
   transition: width .15s linear; }
 .bar-row.local .bar-fill { background: repeating-linear-gradient(90deg, var(--green) 0 10px, var(--green-d) 10px 12px); }
+.back { font-size: 9px; background: var(--coin); color: var(--ink); padding: 8px 12px;
+  box-shadow: 2px 2px 0 var(--ink); margin-bottom: 14px; }

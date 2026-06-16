@@ -191,6 +191,8 @@ export function useRace() {
   // "Play again": return to Home with a clean slate (no reload, no reconnect). The saved
   // seat was already cleared in onFinished, so the next game starts fresh.
   const reset = useCallback(() => {
+    sessionStorage.removeItem('typingRaceToken');
+    sessionStorage.removeItem('typingRaceCode');
     setResults([]);
     setPlayers([]);
     setText('');
