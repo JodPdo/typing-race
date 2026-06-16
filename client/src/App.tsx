@@ -162,6 +162,7 @@ function Race({ race }: { race: RaceHook }) {
 
   return (
     <div className="screen">
+      <button className="back" onClick={race.reset}>&larr; Quit</button>
       <h1>Race!</h1>
 
       <Passage text={text} typed={typed} />
